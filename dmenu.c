@@ -483,6 +483,20 @@ keypress(XKeyEvent *ev)
 		}
 	} else if (ev->state & Mod1Mask) {
 		switch(kcode) {
+		DEF_ALT_KEY(49, '`', '~')
+		DEF_ALT_KEY(10, '1', '!')
+		DEF_ALT_KEY(11, '2', '@')
+		DEF_ALT_KEY(12, '3', '#')
+		DEF_ALT_KEY(13, '4', '$')
+		DEF_ALT_KEY(14, '5', '%')
+		DEF_ALT_KEY(15, '6', '^')
+		DEF_ALT_KEY(16, '7', '&')
+		DEF_ALT_KEY(17, '8', '*')
+		DEF_ALT_KEY(18, '9', '(')
+		DEF_ALT_KEY(19, '0', ')')
+		DEF_ALT_KEY(20, '-', '_')
+		DEF_ALT_KEY(21, '=', '+')
+
 		DEF_ALT_KEY(24, '`', '~')
 		DEF_ALT_KEY(31, '\\', '|')
 		DEF_ALT_KEY(32, '-', '_')
@@ -506,6 +520,7 @@ keypress(XKeyEvent *ev)
 		DEF_ALT_KEY(59, ',', '<')
 		DEF_ALT_KEY(60, '.', '>')
 		DEF_ALT_KEY(61, '/', '?')
+		DEF_ALT_KEY(51, '\\', '|')
 		default:
 			return;
 		}
