@@ -483,6 +483,8 @@ keypress(XKeyEvent *ev)
 		}
 	} else if (ev->state & Mod1Mask) {
 		switch(kcode) {
+		DEF_ALT_KEY(65, ' ', ' ')
+
 		DEF_ALT_KEY(49, '`', '~')
 		DEF_ALT_KEY(10, '1', '!')
 		DEF_ALT_KEY(11, '2', '@')
