@@ -15,7 +15,6 @@
 #include <X11/extensions/Xinerama.h>
 #endif
 #include <X11/Xft/Xft.h>
-#include <X11/Xresource.h>
 
 #include "drw.h"
 #include "util.h"
@@ -60,10 +59,6 @@ static XIC xic;
 
 static Drw *drw;
 static Clr *scheme[SchemeLast];
-
-/* Temporary arrays to allow overriding xresources values */
-static char *colortemp[4];
-static char *tempfonts;
 
 #include "config.h"
 
@@ -389,20 +384,12 @@ movewordedge(int dir)
 	}
 }
 
-#define DEF_ALT_KEY(code, normal_char, shift_char) \
-        case code: \
-            len = 1; \
-            buf[0] = (ev->state & ShiftMask) ? shift_char : normal_char; \
-            buf[1] = '\0'; \
-            goto insert;
-
 static void
 keypress(XKeyEvent *ev)
 {
 	char buf[32];
 	int len;
 	KeySym ksym;
-	KeyCode kcode = ev->keycode;
 	Status status;
 
 	len = XmbLookupString(xic, ev, buf, sizeof buf, &ksym, &status);
@@ -482,47 +469,19 @@ keypress(XKeyEvent *ev)
 			return;
 		}
 	} else if (ev->state & Mod1Mask) {
-		switch(kcode) {
-		DEF_ALT_KEY(65, ' ', ' ')
-
-		DEF_ALT_KEY(49, '`', '~')
-		DEF_ALT_KEY(10, '1', '!')
-		DEF_ALT_KEY(11, '2', '@')
-		DEF_ALT_KEY(12, '3', '#')
-		DEF_ALT_KEY(13, '4', '$')
-		DEF_ALT_KEY(14, '5', '%')
-		DEF_ALT_KEY(15, '6', '^')
-		DEF_ALT_KEY(16, '7', '&')
-		DEF_ALT_KEY(17, '8', '*')
-		DEF_ALT_KEY(18, '9', '(')
-		DEF_ALT_KEY(19, '0', ')')
-		DEF_ALT_KEY(20, '-', '_')
-		DEF_ALT_KEY(21, '=', '+')
-
-		DEF_ALT_KEY(24, '`', '~')
-		DEF_ALT_KEY(31, '\\', '|')
-		DEF_ALT_KEY(32, '-', '_')
-		DEF_ALT_KEY(33, '=', '+')
-		DEF_ALT_KEY(34, '[', '{')
-		DEF_ALT_KEY(35, ']', '}')
-
-		DEF_ALT_KEY(38, '1', '!')
-		DEF_ALT_KEY(39, '2', '@')
-		DEF_ALT_KEY(40, '3', '#')
-		DEF_ALT_KEY(41, '4', '$')
-		DEF_ALT_KEY(42, '5', '%')
-		DEF_ALT_KEY(43, '6', '^')
-		DEF_ALT_KEY(44, '7', '&')
-		DEF_ALT_KEY(45, '8', '*')
-		DEF_ALT_KEY(46, '9', '(')
-		DEF_ALT_KEY(47, '0', ')')
-		DEF_ALT_KEY(48, '\'', '"')
-		DEF_ALT_KEY(58, ';', ':')
-
-		DEF_ALT_KEY(59, ',', '<')
-		DEF_ALT_KEY(60, '.', '>')
-		DEF_ALT_KEY(61, '/', '?')
-		DEF_ALT_KEY(51, '\\', '|')
+		switch(ksym) {
+		case XK_b:
+			movewordedge(-1);
+			goto draw;
+		case XK_f:
+			movewordedge(+1);
+			goto draw;
+		case XK_g: ksym = XK_Home;  break;
+		case XK_G: ksym = XK_End;   break;
+		case XK_h: ksym = XK_Up;    break;
+		case XK_j: ksym = XK_Next;  break;
+		case XK_k: ksym = XK_Prior; break;
+		case XK_l: ksym = XK_Down;  break;
 		default:
 			return;
 		}
@@ -692,9 +651,14 @@ run(void)
 	XEvent ev;
 
 	while (!XNextEvent(dpy, &ev)) {
-		if (XFilterEvent(&ev, None))
+		if (XFilterEvent(&ev, win))
 			continue;
 		switch(ev.type) {
+		case DestroyNotify:
+			if (ev.xdestroywindow.window != win)
+				break;
+			cleanup();
+			exit(1);
 		case Expose:
 			if (ev.xexpose.count == 0)
 				drw_map(drw, win, 0, 0, mw, mh);
@@ -735,13 +699,8 @@ setup(void)
 	int a, di, n, area = 0;
 #endif
 	/* init appearance */
-	for (j = 0; j < SchemeLast; j++) {
-		scheme[j] = drw_scm_create(drw, (const char**)colors[j], 2);
-	}
-	for (j = 0; j < SchemeOut; ++j) {
-		for (i = 0; i < 2; ++i)
-			free(colors[j][i]);
-	}
+	for (j = 0; j < SchemeLast; j++)
+		scheme[j] = drw_scm_create(drw, colors[j], 2);
 
 	clip = XInternAtom(dpy, "CLIPBOARD",   False);
 	utf8 = XInternAtom(dpy, "UTF8_STRING", False);
@@ -799,21 +758,22 @@ setup(void)
 	swa.override_redirect = True;
 	swa.background_pixel = scheme[SchemeNorm][ColBg].pixel;
 	swa.event_mask = ExposureMask | KeyPressMask | VisibilityChangeMask;
-	win = XCreateWindow(dpy, parentwin, x, y, mw, mh, border_width,
+	win = XCreateWindow(dpy, parentwin, x, y, mw, mh, 0,
 	                    CopyFromParent, CopyFromParent, CopyFromParent,
 	                    CWOverrideRedirect | CWBackPixel | CWEventMask, &swa);
-	XSetWindowBorder(dpy, win, scheme[SchemeSel][ColBg].pixel);
 	XSetClassHint(dpy, win, &ch);
 
-	/* open input methods */
-	xim = XOpenIM(dpy, NULL, NULL, NULL);
+
+	/* input methods */
+	if ((xim = XOpenIM(dpy, NULL, NULL, NULL)) == NULL)
+		die("XOpenIM failed: could not open input device");
+
 	xic = XCreateIC(xim, XNInputStyle, XIMPreeditNothing | XIMStatusNothing,
 	                XNClientWindow, win, XNFocusWindow, win, NULL);
 
 	XMapRaised(dpy, win);
-	XSetInputFocus(dpy, win, RevertToParent, CurrentTime);
 	if (embed) {
-		XSelectInput(dpy, parentwin, FocusChangeMask);
+		XSelectInput(dpy, parentwin, FocusChangeMask | SubstructureNotifyMask);
 		if (XQueryTree(dpy, parentwin, &dw, &w, &dws, &du) && dws) {
 			for (i = 0; i < du && dws[i] != win; ++i)
 				XSelectInput(dpy, dws[i], FocusChangeMask);
@@ -832,41 +792,6 @@ usage(void)
 	      "             [-h height]\n"
 	      "             [-nb color] [-nf color] [-sb color] [-sf color] [-w windowid]\n", stderr);
 	exit(1);
-}
-
-void
-readxresources(void) {
-	XrmInitialize();
-
-	char* xrm;
-	if ((xrm = XResourceManagerString(drw->dpy))) {
-		char *type;
-		XrmDatabase xdb = XrmGetStringDatabase(xrm);
-		XrmValue xval;
-
-		if (XrmGetResource(xdb, "dmenu.font", "*", &type, &xval))
-			fonts[0] = strdup(xval.addr);
-		else
-			fonts[0] = strdup(fonts[0]);
-		if (XrmGetResource(xdb, "dmenu.background", "*", &type, &xval))
-			colors[SchemeNorm][ColBg] = strdup(xval.addr);
-		else
-			colors[SchemeNorm][ColBg] = strdup(colors[SchemeNorm][ColBg]);
-		if (XrmGetResource(xdb, "dmenu.foreground", "*", &type, &xval))
-			colors[SchemeNorm][ColFg] = strdup(xval.addr);
-		else
-			colors[SchemeNorm][ColFg] = strdup(colors[SchemeNorm][ColFg]);
-		if (XrmGetResource(xdb, "dmenu.selbackground", "*", &type, &xval))
-			colors[SchemeSel][ColBg] = strdup(xval.addr);
-		else
-			colors[SchemeSel][ColBg] = strdup(colors[SchemeSel][ColBg]);
-		if (XrmGetResource(xdb, "dmenu.selforeground", "*", &type, &xval))
-			colors[SchemeSel][ColFg] = strdup(xval.addr);
-		else
-			colors[SchemeSel][ColFg] = strdup(colors[SchemeSel][ColFg]);
-
-		XrmDestroyDatabase(xdb);
-	}
 }
 
 int
@@ -901,19 +826,19 @@ main(int argc, char *argv[])
 		else if (!strcmp(argv[i], "-p"))   /* adds prompt to left of input field */
 			prompt = argv[++i];
 		else if (!strcmp(argv[i], "-fn"))  /* font or font set */
-			tempfonts = argv[++i];
+			fonts[0] = argv[++i];
 		else if(!strcmp(argv[i], "-h")) { /* minimum height of one menu line */
 			lineheight = atoi(argv[++i]);
 			lineheight = MAX(lineheight,8); /* reasonable default in case of value too small/negative */
 		}
 		else if (!strcmp(argv[i], "-nb"))  /* normal background color */
-			colortemp[0] = argv[++i];
+			colors[SchemeNorm][ColBg] = argv[++i];
 		else if (!strcmp(argv[i], "-nf"))  /* normal foreground color */
-			colortemp[1] = argv[++i];
+			colors[SchemeNorm][ColFg] = argv[++i];
 		else if (!strcmp(argv[i], "-sb"))  /* selected background color */
-			colortemp[2] = argv[++i];
+			colors[SchemeSel][ColBg] = argv[++i];
 		else if (!strcmp(argv[i], "-sf"))  /* selected foreground color */
-			colortemp[3] = argv[++i];
+			colors[SchemeSel][ColFg] = argv[++i];
 		else if (!strcmp(argv[i], "-w"))   /* embedding window id */
 			embed = argv[++i];
 		else
@@ -921,8 +846,6 @@ main(int argc, char *argv[])
 
 	if (!setlocale(LC_CTYPE, "") || !XSupportsLocale())
 		fputs("warning: no locale support\n", stderr);
-	if (!XSetLocaleModifiers(""))
-		fputs("warning: no locale modifiers support\n", stderr);
 	if (!(dpy = XOpenDisplay(NULL)))
 		die("cannot open display");
 	screen = DefaultScreen(dpy);
@@ -933,23 +856,8 @@ main(int argc, char *argv[])
 		die("could not get embedding window attributes: 0x%lx",
 		    parentwin);
 	drw = drw_create(dpy, screen, root, wa.width, wa.height);
-	readxresources();
-	/* Now we check whether to override xresources with commandline parameters */
-	if ( tempfonts )
-	   fonts[0] = strdup(tempfonts);
-	if ( colortemp[0])
-	   colors[SchemeNorm][ColBg] = strdup(colortemp[0]);
-	if ( colortemp[1])
-	   colors[SchemeNorm][ColFg] = strdup(colortemp[1]);
-	if ( colortemp[2])
-	   colors[SchemeSel][ColBg]  = strdup(colortemp[2]);
-	if ( colortemp[3])
-	   colors[SchemeSel][ColFg]  = strdup(colortemp[3]);
-
-	if (!drw_fontset_create(drw, (const char**)fonts, LENGTH(fonts)))
+	if (!drw_fontset_create(drw, fonts, LENGTH(fonts)))
 		die("no fonts could be loaded.");
-
-	free(fonts[0]);
 	lrpad = drw->fonts->h;
 
 #ifdef __OpenBSD__

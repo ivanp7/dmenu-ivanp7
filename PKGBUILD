@@ -3,7 +3,7 @@
 
 _pkgname=dmenu
 pkgname=$_pkgname-git
-pkgver=4.9
+pkgver=5.0
 pkgrel=1
 pkgdesc="A generic menu for X"
 url="http://tools.suckless.org/dmenu/"
@@ -17,9 +17,9 @@ source=('arg.h' 'config.h' 'config.mk' 'dmenu.1' 'dmenu.c'
     'dmenu_path' 'dmenu_run' 'drw.c' 'drw.h' 'LICENSE'
     'Makefile' 'stest.1' 'stest.c' 'util.c' 'util.h')
 md5sums=('5bfb899b5a872212c492c4f110e9a119' 'SKIP'
-    '488142324d38b6d83647854d416e0fcf' 'SKIP' 'SKIP'
+    '9f65b5d073c1aa9c28ef69be0a88b0dc' 'SKIP' 'SKIP'
     '95ce4577f2a6640db4ee22520f83a69b' '02767b3eda4ab44b52e190ec3e01fec6' 
-    'SKIP' 'SKIP' 'abaaa35e905ec9de24441fdcded4d6f9' 'ece1a69b52a7dc80af511306582e6eb5' 
+    'SKIP' 'SKIP' '3430d46fc42f3a732b887537239531df' 'ece1a69b52a7dc80af511306582e6eb5' 
     'SKIP' 'SKIP' 'SKIP' 'SKIP')
 
 build(){
