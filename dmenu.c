@@ -480,7 +480,6 @@ keypress(XKeyEvent *ev)
 		switch(kcode) {
 		DEF_ALT_KEY(65, ' ', ' ')
 
-		DEF_ALT_KEY(49, '`', '~')
 		DEF_ALT_KEY(10, '1', '!')
 		DEF_ALT_KEY(11, '2', '@')
 		DEF_ALT_KEY(12, '3', '#')
@@ -495,9 +494,10 @@ keypress(XKeyEvent *ev)
 		DEF_ALT_KEY(21, '=', '+')
 
 		DEF_ALT_KEY(24, '`', '~')
-		DEF_ALT_KEY(31, '\\', '|')
-		DEF_ALT_KEY(32, '-', '_')
-		DEF_ALT_KEY(33, '=', '+')
+		DEF_ALT_KEY(30, '\\', '|')
+		DEF_ALT_KEY(31, '-', '_')
+		DEF_ALT_KEY(32, '=', '+')
+		DEF_ALT_KEY(33, ';', ':')
 		DEF_ALT_KEY(34, '[', '{')
 		DEF_ALT_KEY(35, ']', '}')
 
@@ -512,12 +512,14 @@ keypress(XKeyEvent *ev)
 		DEF_ALT_KEY(46, '9', '(')
 		DEF_ALT_KEY(47, '0', ')')
 		DEF_ALT_KEY(48, '\'', '"')
-		DEF_ALT_KEY(58, ';', ':')
+		DEF_ALT_KEY(49, '`', '~')
 
+		DEF_ALT_KEY(51, '\\', '|')
+		DEF_ALT_KEY(55, '5', '%')
+		DEF_ALT_KEY(58, '6', '^')
 		DEF_ALT_KEY(59, ',', '<')
 		DEF_ALT_KEY(60, '.', '>')
 		DEF_ALT_KEY(61, '/', '?')
-		DEF_ALT_KEY(51, '\\', '|')
 		default:
 			return;
 		}
