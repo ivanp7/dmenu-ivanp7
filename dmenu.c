@@ -442,10 +442,9 @@ keypress(XKeyEvent *ev)
 			while (cursor > 0 && !strchr(worddelimiters, text[nextrune(-1)]))
 				insert(NULL, nextrune(-1) - cursor);
 			break;
-		case XK_y: /* paste selection */
-		case XK_Y:
-			XConvertSelection(dpy, (ev->state & ShiftMask) ? clip : XA_PRIMARY,
-			                  utf8, utf8, win, CurrentTime);
+		case XK_v: /* paste selection */
+		case XK_V:
+			XConvertSelection(dpy, clip, utf8, utf8, win, CurrentTime);
 			return;
 		case XK_Left:
 			movewordedge(-1);
@@ -594,6 +593,10 @@ insert:
 		sel = curr = prev;
 		calcoffsets();
 		break;
+    case XK_Insert: /* paste selection */
+        if (ev->state & ShiftMask)
+            XConvertSelection(dpy, XA_PRIMARY, utf8, utf8, win, CurrentTime);
+        return;
 	case XK_Return:
 	case XK_KP_Enter:
 		if (!(ev->state & ControlMask)) {
