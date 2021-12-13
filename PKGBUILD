@@ -16,11 +16,21 @@ conflicts=($_pkgname)
 source=('arg.h' 'config.h' 'config.mk' 'dmenu.1' 'dmenu.c'
     'dmenu_path' 'dmenu_run' 'drw.c' 'drw.h' 'LICENSE'
     'Makefile' 'stest.1' 'stest.c' 'util.c' 'util.h')
-md5sums=('5bfb899b5a872212c492c4f110e9a119' 'SKIP'
-    '9f65b5d073c1aa9c28ef69be0a88b0dc' 'SKIP' 'SKIP'
-    '95ce4577f2a6640db4ee22520f83a69b' '02767b3eda4ab44b52e190ec3e01fec6' 
-    'SKIP' 'SKIP' '3430d46fc42f3a732b887537239531df' 'ece1a69b52a7dc80af511306582e6eb5' 
-    'SKIP' 'SKIP' 'SKIP' 'SKIP')
+md5sums=('5bfb899b5a872212c492c4f110e9a119'
+         '4a25969c7588849abcbb97c0d5a3fb64'
+         '5f8167b2aaeafa02104815509803c8a0'
+         '8f65504c55201b37b1641ed1611172a2'
+         'ddcbec7dc0492b200a2d4dd9c08f20b1'
+         '95ce4577f2a6640db4ee22520f83a69b'
+         '02767b3eda4ab44b52e190ec3e01fec6'
+         '952dc86e34617de02ddde41a2f256de0'
+         'db0fc5f7f2a21e5cec73349ebdaa954a'
+         '3430d46fc42f3a732b887537239531df'
+         'ece1a69b52a7dc80af511306582e6eb5'
+         '6d01e0cf823733696028e5f33b9fe593'
+         '8942094f1a2f79c8fbcb6fd473b3f3c0'
+         'e1d877b57636568ba579b1bc0ae42e8f'
+         '007c065ca60e3f3c56bf153f2f769a90')
 
 build(){
   make PREFIX=/usr DESTDIR="$pkgdir"
