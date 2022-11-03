@@ -2,7 +2,7 @@
 # Contributor: ivanp7
 
 _pkgname=dmenu
-pkgname=$_pkgname-git
+pkgname=$_pkgname-ivanp7
 pkgver=5.0
 pkgrel=1
 pkgdesc="A generic menu for X"
