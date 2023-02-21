@@ -10,7 +10,6 @@ url="http://tools.suckless.org/dmenu/"
 arch=('i686' 'x86_64')
 license=('MIT')
 depends=('sh' 'libxinerama' 'libxft')
-makedepends=('git')
 provides=($_pkgname)
 conflicts=($_pkgname)
 source=('arg.h' 'config.h' 'config.mk' 'dmenu.1' 'dmenu.c'
@@ -32,7 +31,7 @@ md5sums=('5bfb899b5a872212c492c4f110e9a119'
          '962655608098fe6ac52cc796e7c42fd0'
          '007c065ca60e3f3c56bf153f2f769a90')
 
-build(){
+build() {
   make PREFIX=/usr DESTDIR="$pkgdir"
 }
 
