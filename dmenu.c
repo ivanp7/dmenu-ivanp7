@@ -36,7 +36,7 @@ enum { SchemeNorm, SchemeSel, SchemeNormHighlight, SchemeSelHighlight,
 struct item {
 	char *text;
 	struct item *left, *right;
-	int out;
+	int id; /* for multiselect */
 	double distance;
 };
 
@@ -51,6 +51,9 @@ static struct item *items = NULL;
 static struct item *matches, *matchend;
 static struct item *prev, *curr, *next, *sel;
 static int mon = -1, screen;
+
+static int *selid = NULL;
+static unsigned int selidsize = 0;
 
 static Atom clip, utf8;
 static Display *dpy;
@@ -70,6 +73,15 @@ textw_clamp(const char *str, unsigned int n)
 {
 	unsigned int w = drw_fontset_getwidth_clamp(drw, str, n) + lrpad;
 	return MIN(w, n);
+}
+
+static int
+issel(size_t id)
+{
+	for (int i = 0;i < selidsize;i++)
+		if (selid[i] == id)
+			return 1;
+	return 0;
 }
 
 static void
@@ -117,6 +129,7 @@ cleanup(void)
 	drw_free(drw);
 	XSync(dpy, False);
 	XCloseDisplay(dpy);
+	free(selid);
 }
 
 static char *
@@ -180,7 +193,7 @@ drawitem(struct item *item, int x, int y, int w)
 	int r;
 	if (item == sel)
 		drw_setscheme(drw, scheme[SchemeSel]);
-	else if (item->out)
+	else if (issel(item->id))
 		drw_setscheme(drw, scheme[SchemeOut]);
 	else
 		drw_setscheme(drw, scheme[SchemeNorm]);
@@ -542,6 +555,20 @@ keypress(XKeyEvent *ev)
 			goto draw;
 		case XK_Return:
 		case XK_KP_Enter:
+			if (sel && issel(sel->id)) {
+				for (int i = 0;i < selidsize;i++)
+					if (selid[i] == sel->id)
+						selid[i] = -1;
+			} else {
+				for (int i = 0;i < selidsize;i++)
+					if (selid[i] == -1) {
+						selid[i] = sel->id;
+						return;
+					}
+				selidsize++;
+				selid = realloc(selid, (selidsize + 1) * sizeof(int));
+				selid[selidsize - 1] = sel->id;
+			}
 			break;
 		case XK_bracketleft:
 			cleanup();
@@ -646,13 +673,17 @@ insert:
 		break;
 	case XK_Return:
 	case XK_KP_Enter:
-		puts((sel && !(ev->state & ShiftMask)) ? sel->text : text);
 		if (!(ev->state & ControlMask)) {
+			for (int i = 0;i < selidsize;i++)
+				if (selid[i] != -1 && (!sel || sel->id != selid[i]))
+					puts(items[selid[i]].text);
+			if (sel && !(ev->state & ShiftMask))
+				puts(sel->text);
+			else
+				puts(text);
 			cleanup();
 			exit(0);
 		}
-		if (sel)
-			sel->out = 1;
 		break;
 	case XK_Right:
 	case XK_KP_Right:
@@ -717,7 +748,7 @@ readstdin(void)
 		if (line[len - 1] == '\n')
 			line[len - 1] = '\0';
 		items[i].text = line;
-		items[i].out = 0;
+		items[i].id = i; /* for multiselect */
 	}
 	if (items)
 		items[i].text = NULL;

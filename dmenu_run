@@ -1,2 +1,5 @@
 #!/bin/sh
-dmenu_path | dmenu "$@" | ${SHELL:-"/bin/sh"} &
+dmenu_path | dmenu "$@" |
+    while read -r cmd; do
+        echo "$cmd" | xargs setsid -f
+    done
