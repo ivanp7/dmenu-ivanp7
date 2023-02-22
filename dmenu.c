@@ -490,12 +490,20 @@ movewordedge(int dir)
 	}
 }
 
+#define DEF_ALT_KEY(code, normal_char, shift_char) \
+	case code: \
+	len = 1; \
+	buf[0] = (ev->state & ShiftMask) ? shift_char : normal_char; \
+	buf[1] = '\0'; \
+	goto insert;
+
 static void
 keypress(XKeyEvent *ev)
 {
 	char buf[32];
 	int len;
 	KeySym ksym;
+	KeyCode kcode = ev->keycode;
 	Status status;
 
 	len = XmbLookupString(xic, ev, buf, sizeof buf, &ksym, &status);
@@ -540,10 +548,13 @@ keypress(XKeyEvent *ev)
 			while (cursor > 0 && !strchr(worddelimiters, text[nextrune(-1)]))
 				insert(NULL, nextrune(-1) - cursor);
 			break;
-		case XK_y: /* paste selection */
-		case XK_Y:
-			XConvertSelection(dpy, (ev->state & ShiftMask) ? clip : XA_PRIMARY,
-			                  utf8, utf8, win, CurrentTime);
+		case XK_v: /* paste selection */
+		case XK_V:
+			XConvertSelection(dpy, clip, utf8, utf8, win, CurrentTime);
+			return;
+		case XK_Insert: /* paste selection */
+			if (ev->state & ShiftMask)
+				XConvertSelection(dpy, XA_PRIMARY, utf8, utf8, win, CurrentTime);
 			return;
 		case XK_Left:
 		case XK_KP_Left:
@@ -577,19 +588,49 @@ keypress(XKeyEvent *ev)
 			return;
 		}
 	} else if (ev->state & Mod1Mask) {
-		switch(ksym) {
-		case XK_b:
-			movewordedge(-1);
-			goto draw;
-		case XK_f:
-			movewordedge(+1);
-			goto draw;
-		case XK_g: ksym = XK_Home;  break;
-		case XK_G: ksym = XK_End;   break;
-		case XK_h: ksym = XK_Up;    break;
-		case XK_j: ksym = XK_Next;  break;
-		case XK_k: ksym = XK_Prior; break;
-		case XK_l: ksym = XK_Down;  break;
+		switch(kcode) {
+		DEF_ALT_KEY(65, ' ', ' ')
+
+		DEF_ALT_KEY(10, '1', '!')
+		DEF_ALT_KEY(11, '2', '@')
+		DEF_ALT_KEY(12, '3', '#')
+		DEF_ALT_KEY(13, '4', '$')
+		DEF_ALT_KEY(14, '5', '%')
+		DEF_ALT_KEY(15, '6', '^')
+		DEF_ALT_KEY(16, '7', '&')
+		DEF_ALT_KEY(17, '8', '*')
+		DEF_ALT_KEY(18, '9', '(')
+		DEF_ALT_KEY(19, '0', ')')
+		DEF_ALT_KEY(20, '-', '_')
+		DEF_ALT_KEY(21, '=', '+')
+
+		DEF_ALT_KEY(24, '`', '~')
+		DEF_ALT_KEY(30, '\\', '|')
+		DEF_ALT_KEY(31, '-', '_')
+		DEF_ALT_KEY(32, '=', '+')
+		DEF_ALT_KEY(33, ';', ':')
+		DEF_ALT_KEY(34, '[', '{')
+		DEF_ALT_KEY(35, ']', '}')
+
+		DEF_ALT_KEY(38, '1', '!')
+		DEF_ALT_KEY(39, '2', '@')
+		DEF_ALT_KEY(40, '3', '#')
+		DEF_ALT_KEY(41, '4', '$')
+		DEF_ALT_KEY(42, '5', '%')
+		DEF_ALT_KEY(43, '6', '^')
+		DEF_ALT_KEY(44, '7', '&')
+		DEF_ALT_KEY(45, '8', '*')
+		DEF_ALT_KEY(46, '9', '(')
+		DEF_ALT_KEY(47, '0', ')')
+		DEF_ALT_KEY(48, '\'', '"')
+		DEF_ALT_KEY(49, '`', '~')
+
+		DEF_ALT_KEY(51, '\\', '|')
+		DEF_ALT_KEY(55, '5', '%')
+		DEF_ALT_KEY(58, '6', '^')
+		DEF_ALT_KEY(59, ',', '<')
+		DEF_ALT_KEY(60, '.', '>')
+		DEF_ALT_KEY(61, '/', '?')
 		default:
 			return;
 		}
