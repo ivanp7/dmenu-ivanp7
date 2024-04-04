@@ -23,7 +23,6 @@
 /* macros */
 #define INTERSECT(x,y,w,h,r)  (MAX(0, MIN((x)+(w),(r).x_org+(r).width)  - MAX((x),(r).x_org)) \
                              * MAX(0, MIN((y)+(h),(r).y_org+(r).height) - MAX((y),(r).y_org)))
-#define LENGTH(X)             (sizeof X / sizeof X[0])
 #define TEXTW(X)              (drw_fontset_getwidth(drw, (X)) + lrpad)
 #define NUMBERSMAXDIGITS      100
 #define NUMBERSBUFSIZE        (NUMBERSMAXDIGITS * 2) + 1
@@ -500,9 +499,9 @@ movewordedge(int dir)
 static void
 keypress(XKeyEvent *ev)
 {
-	char buf[32];
+	char buf[64];
 	int len;
-	KeySym ksym;
+	KeySym ksym = NoSymbol;
 	KeyCode kcode = ev->keycode;
 	Status status;
 
@@ -510,10 +509,10 @@ keypress(XKeyEvent *ev)
 	switch (status) {
 	default: /* XLookupNone, XBufferOverflow */
 		return;
-	case XLookupChars:
+	case XLookupChars: /* composed string from input method */
 		goto insert;
 	case XLookupKeySym:
-	case XLookupBoth:
+	case XLookupBoth: /* a KeySym and a string are returned: use keysym */
 		break;
 	}
 
@@ -778,19 +777,23 @@ static void
 readstdin(void)
 {
 	char *line = NULL;
-	size_t i, junk, size = 0;
+	size_t i, itemsiz = 0, linesiz = 0;
 	ssize_t len;
 
 	/* read each line from stdin and add it to the item list */
-	for (i = 0; (len = getline(&line, &junk, stdin)) != -1; i++, line = NULL) {
-		if (i + 1 >= size / sizeof *items)
-			if (!(items = realloc(items, (size += BUFSIZ))))
-				die("cannot realloc %zu bytes:", size);
+	for (i = 0; (len = getline(&line, &linesiz, stdin)) != -1; i++) {
+		if (i + 1 >= itemsiz) {
+			itemsiz += 256;
+			if (!(items = realloc(items, itemsiz * sizeof(*items))))
+				die("cannot realloc %zu bytes:", itemsiz * sizeof(*items));
+		}
 		if (line[len - 1] == '\n')
 			line[len - 1] = '\0';
-		items[i].text = line;
+		if (!(items[i].text = strdup(line)))
+			die("strdup:");
 		items[i].id = i; /* for multiselect */
 	}
+	free(line);
 	if (items)
 		items[i].text = NULL;
 	lines = MIN(lines, i);
@@ -909,7 +912,7 @@ setup(void)
 	swa.override_redirect = True;
 	swa.background_pixel = scheme[SchemeNorm][ColBg].pixel;
 	swa.event_mask = ExposureMask | KeyPressMask | VisibilityChangeMask;
-	win = XCreateWindow(dpy, parentwin, x, y, mw, mh, 0,
+	win = XCreateWindow(dpy, root, x, y, mw, mh, 0,
 	                    CopyFromParent, CopyFromParent, CopyFromParent,
 	                    CWOverrideRedirect | CWBackPixel | CWEventMask, &swa);
 	XSetClassHint(dpy, win, &ch);
@@ -924,6 +927,7 @@ setup(void)
 
 	XMapRaised(dpy, win);
 	if (embed) {
+		XReparentWindow(dpy, win, parentwin, x, y);
 		XSelectInput(dpy, parentwin, FocusChangeMask | SubstructureNotifyMask);
 		if (XQueryTree(dpy, parentwin, &dw, &w, &dws, &du) && dws) {
 			for (i = 0; i < du && dws[i] != win; ++i)
